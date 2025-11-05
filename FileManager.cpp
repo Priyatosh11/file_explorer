@@ -5,10 +5,14 @@
 
 namespace fs = std::filesystem;
 
+
+// Constructor for FileManager
 FileManager::FileManager() {
     currentPath = fs::current_path().string();
 }
 
+
+// List files in the current directory
 std::vector<std::string> FileManager::listFiles() const {
     std::vector<std::string> files;
     try {
@@ -18,6 +22,8 @@ std::vector<std::string> FileManager::listFiles() const {
     return files;
 }
 
+
+// Change the current directory
 bool FileManager::changeDirectory(const std::string &dir) {
     fs::path newPath = (dir == "..") ? fs::path(currentPath).parent_path()
                                      : fs::path(currentPath) / dir;
@@ -28,6 +34,8 @@ bool FileManager::changeDirectory(const std::string &dir) {
     return false;
 }
 
+
+// Get the current directory path
 std::string FileManager::getCurrentPath() const {
     return currentPath;
 }
@@ -39,11 +47,21 @@ bool FileManager::createFile(const std::string &filename) {
     } catch (...) { return false; }
 }
 
+// Create a new directory
+bool FileManager::createDirectory(const std::string &dirname) {
+    try {
+        return fs::create_directory(fs::path(currentPath) / dirname);
+    } catch (...) { return false; }
+}
+
+
+// Delete a file
 bool FileManager::deleteFile(const std::string &filename) {
     try { return fs::remove(fs::path(currentPath) / filename); }
     catch (...) { return false; }
 }
 
+// Copy a file
 bool FileManager::copyFile(const std::string &src, const std::string &dest) {
     try {
         fs::copy(fs::path(currentPath) / src, fs::path(currentPath) / dest,
@@ -52,6 +70,7 @@ bool FileManager::copyFile(const std::string &src, const std::string &dest) {
     } catch (...) { return false; }
 }
 
+// Move a file
 bool FileManager::moveFile(const std::string &src, const std::string &dest) {
     try {
         fs::rename(fs::path(currentPath) / src, fs::path(currentPath) / dest);
@@ -59,6 +78,8 @@ bool FileManager::moveFile(const std::string &src, const std::string &dest) {
     } catch (...) { return false; }
 }
 
+
+// Search files by keyword
 std::vector<std::string> FileManager::searchFiles(const std::string &keyword) const {
     std::vector<std::string> results;
     try {
@@ -70,6 +91,7 @@ std::vector<std::string> FileManager::searchFiles(const std::string &keyword) co
     return results;
 }
 
+// Get file permissions
 std::string FileManager::getPermissions(const std::string &filename) const {
     struct stat info;
     std::string perms = "---------";
@@ -87,7 +109,7 @@ std::string FileManager::getPermissions(const std::string &filename) const {
     return perms;
 }
 
-
+// Set file permissions
 bool FileManager::setPermissions(const std::string &filename, const std::string &mode) {
     fs::path filePath = fs::path(currentPath) / filename;
     try {
@@ -110,10 +132,13 @@ bool FileManager::setPermissions(const std::string &filename, const std::string 
     }
 }
 
+// Check if a path is a directory
 bool FileManager::isDirectory(const std::string &name) const {
     return fs::is_directory(fs::path(currentPath) / name);
 }
 
+
+// Get free space in the current directory (in GB)
 unsigned long long FileManager::getFreeSpace() const {
     try {
         auto space = fs::space(currentPath);
@@ -122,7 +147,7 @@ unsigned long long FileManager::getFreeSpace() const {
 }
 
 
-
+// Get file size
 unsigned long long FileManager::getFileSize(const std::string &name)
 {
     std::string fullPath = currentPath + "/" + name;
