@@ -2,44 +2,48 @@
 #include <ncurses.h>
 #include <iomanip>
 #include <sstream>
+#include <cstdlib>
 
 UIManager::UIManager(FileManager &fileManager)
     : fm(fileManager), highlight(0), offset(0) {}
 
+
+ // Draw header
 void UIManager::drawHeader()
 {
     attron(COLOR_PAIR(1) | A_BOLD);
-    mvprintw(0, 0, "  FILE EXPLORER  ");
+    mvprintw(0, 0, "  LINUX FILE EXPLORER Author: SMRUTI RANJAN BHUYAN  ");
     int cols = getmaxx(stdscr);
-    for (int i = 17; i < cols; i++)
+    for (int i = 22; i < cols; i++)
         printw(" ");
     attroff(COLOR_PAIR(1) | A_BOLD);
 }
 
+// Draw footer with current path and prompt
 void UIManager::drawFooter(const std::vector<std::string> &files)
 {
     int rows = getmaxy(stdscr);
     attron(COLOR_PAIR(1));
     unsigned long long freeGB = fm.getFreeSpace();
     std::ostringstream ss;
-    ss << "[DIR] " << fm.getCurrentPath()
-       << " | " << files.size() << " items"
-       << " | " << freeGB << " GB free";
+    ss << fm.getCurrentPath() << ":$ ";
     mvprintw(rows - 3, 0, " %-*s", getmaxx(stdscr) - 1, ss.str().c_str());
     attroff(COLOR_PAIR(1));
 }
 
+// Draw instructions at the bottom
 void UIManager::drawInstructions()
 {
     int rows = getmaxy(stdscr);
     attron(COLOR_PAIR(6));
     mvprintw(rows - 2, 0,
              "[Up|Down] Move  [Enter] Open  [Backspace] Up  "
-             "[c] New  [d] Del  [y] Copy  [m] Move  "
-             "[s] Search  [p] Perms  [h] Help  [q] Quit");
+             "[c] touch  [C] mkdir  [d] rm  [y] cp  [m] mv  "
+             "[s] find  [p] chmod  [h] Help  [q] Quit");
     attroff(COLOR_PAIR(6));
 }
 
+// Prompt for user input
 std::string UIManager::prompt(const std::string &label)
 {
     echo();
@@ -54,6 +58,7 @@ std::string UIManager::prompt(const std::string &label)
     return std::string(input);
 }
 
+// Display files and directories
 void UIManager::displayFiles(const std::vector<std::string> &files)
 {
     clear();
@@ -93,10 +98,10 @@ void UIManager::displayFiles(const std::vector<std::string> &files)
         else
             sizeStr << std::fixed << std::setprecision(1) << (size / (1024.0 * 1024.0)) << " MB";
 
-        if (index == highlight)
-            attron(COLOR_PAIR(2) | A_BOLD);
         if (isDir)
             attron(COLOR_PAIR(7) | A_BOLD);
+        if (index == highlight)
+            attron(COLOR_PAIR(2) | A_BOLD);
 
         mvprintw(i + 4, 2, "%-6s %-40s %-10s %-12s",
                  isDir ? "[DIR]" : "[FIL]",
@@ -104,10 +109,10 @@ void UIManager::displayFiles(const std::vector<std::string> &files)
                  sizeStr.str().c_str(),
                  perms.c_str());
 
-        if (isDir)
-            attroff(COLOR_PAIR(7) | A_BOLD);
         if (index == highlight)
             attroff(COLOR_PAIR(2) | A_BOLD);
+        if (isDir)
+            attroff(COLOR_PAIR(7) | A_BOLD);
     }
 
     drawFooter(files);
@@ -115,6 +120,8 @@ void UIManager::displayFiles(const std::vector<std::string> &files)
     refresh();
 }
 
+
+// Show help menu
 void UIManager::showHelp()
 {
     clear();
@@ -126,9 +133,9 @@ void UIManager::showHelp()
         "[Up / Down] - Move Selection",
         "    Use arrow keys to navigate through files and folders.",
         "",
-        "[Enter] - Open Folder",
+        "[Enter] - Open Folder/File",
         "    Opens the selected folder and displays its contents.",
-        "    If the selected item is a file, it cannot be opened directly.",
+        "    Opens the selected file with the default editor.",
         "",
         "[Backspace] - Go Up",
         "    Move one directory level up (to the parent folder).",
@@ -180,6 +187,8 @@ void UIManager::showHelp()
     getch();
 }
 
+
+// Main UI loop
 void UIManager::start()
 {
     std::vector<std::string> files = fm.listFiles();
@@ -202,7 +211,7 @@ void UIManager::start()
                 highlight++;
             break;
 
-        case 10: // Enter
+        case 10: 
         {
             if (files.empty())
                 break;
@@ -216,7 +225,10 @@ void UIManager::start()
             }
             else
             {
-                mvprintw(getmaxy(stdscr) - 1, 0, "[INFO] '%s' is a file, cannot open.", target.c_str());
+               
+                std::string command = "start \"\" \"" + fm.getCurrentPath() + "/" + target + "\"";
+                system(command.c_str());
+                mvprintw(getmaxy(stdscr) - 1, 0, "[INFO] Opening '%s' with default editor.", target.c_str());
             }
             break;
         }
@@ -232,11 +244,22 @@ void UIManager::start()
 
         case 'c':
         {
-            std::string name = prompt("Enter new file name");
+            std::string name = prompt("touch");
             if (name.empty())
                 break;
             bool ok = fm.createFile(name);
             mvprintw(getmaxy(stdscr) - 1, 0, ok ? "[OK] File created." : "[ERR] Failed to create file.");
+            files = fm.listFiles();
+            break;
+        }
+
+        case 'C':
+        {
+            std::string name = prompt("mkdir");
+            if (name.empty())
+                break;
+            bool ok = fm.createDirectory(name);
+            mvprintw(getmaxy(stdscr) - 1, 0, ok ? "[OK] Directory created." : "[ERR] Failed to create directory.");
             files = fm.listFiles();
             break;
         }
@@ -259,7 +282,7 @@ void UIManager::start()
             if (files.empty())
                 break;
             std::string src = files[highlight];
-            std::string dest = prompt("Copy as");
+            std::string dest = prompt("cp");
             if (dest.empty())
                 break;
             bool ok = fm.copyFile(src, dest);
@@ -273,7 +296,7 @@ void UIManager::start()
             if (files.empty())
                 break;
             std::string src = files[highlight];
-            std::string dest = prompt("Move as");
+            std::string dest = prompt("mv");
             if (dest.empty())
                 break;
             bool ok = fm.moveFile(src, dest);
@@ -284,7 +307,7 @@ void UIManager::start()
 
         case 's':
         {
-            std::string key = prompt("Search keyword");
+            std::string key = prompt("find");
             if (key.empty())
                 break;
             auto results = fm.searchFiles(key);
@@ -313,20 +336,18 @@ void UIManager::start()
             mvprintw(getmaxy(stdscr) - 3, 0, "%s : %s", name.c_str(), perms.c_str());
             refresh();
 
-            std::string choice = prompt("Change permissions? (y/n)");
-            if (choice == "y" || choice == "Y")
+            std::string choice = prompt("chmod");
+            if (choice.empty())
+                break;
+            if (choice.size() == 9)
             {
-                std::string newPerm = prompt("Enter new perms (e.g. rwxr-xr--)");
-                if (newPerm.size() == 9)
-                {
-                    bool ok = fm.setPermissions(name, newPerm);
-                    mvprintw(getmaxy(stdscr) - 1, 0,
-                             ok ? "[OK] Permissions updated." : "[ERR] Failed to update perms.");
-                }
-                else
-                {
-                    mvprintw(getmaxy(stdscr) - 1, 0, "[ERR] Invalid format (use rwxrwxrwx).");
-                }
+                bool ok = fm.setPermissions(name, choice);
+                mvprintw(getmaxy(stdscr) - 1, 0,
+                         ok ? "[OK] Permissions updated." : "[ERR] Failed to update perms.");
+            }
+            else
+            {
+                mvprintw(getmaxy(stdscr) - 1, 0, "[ERR] Invalid format (use rwxrwxrwx).");
             }
             break;
         }

@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+// A simple UI manager for console-based file explorer
 class UIManager
 {
 private:
@@ -17,6 +18,7 @@ private:
     void drawInstructions();
     void displayFiles(const std::vector<std::string> &files);
     void showHelp();
+    void showShellPrompt();
     std::string prompt(const std::string &label);
 
 public:
