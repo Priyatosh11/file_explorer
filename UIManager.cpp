@@ -7,12 +7,11 @@
 UIManager::UIManager(FileManager &fileManager)
     : fm(fileManager), highlight(0), offset(0) {}
 
-
- // Draw header
+// Draw header
 void UIManager::drawHeader()
 {
     attron(COLOR_PAIR(1) | A_BOLD);
-    mvprintw(0, 0, "  LINUX FILE EXPLORER Author: SMRUTI RANJAN BHUYAN  ");
+    mvprintw(0, 0, "  LINUX FILE EXPLORER Author: PRIYATOSH NAYAK  ");
     int cols = getmaxx(stdscr);
     for (int i = 22; i < cols; i++)
         printw(" ");
@@ -120,7 +119,6 @@ void UIManager::displayFiles(const std::vector<std::string> &files)
     refresh();
 }
 
-
 // Show help menu
 void UIManager::showHelp()
 {
@@ -187,7 +185,6 @@ void UIManager::showHelp()
     getch();
 }
 
-
 // Main UI loop
 void UIManager::start()
 {
@@ -211,7 +208,7 @@ void UIManager::start()
                 highlight++;
             break;
 
-        case 10: 
+        case 10:
         {
             if (files.empty())
                 break;
@@ -225,7 +222,7 @@ void UIManager::start()
             }
             else
             {
-               
+
                 std::string command = "start \"\" \"" + fm.getCurrentPath() + "/" + target + "\"";
                 system(command.c_str());
                 mvprintw(getmaxy(stdscr) - 1, 0, "[INFO] Opening '%s' with default editor.", target.c_str());
